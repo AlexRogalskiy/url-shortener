@@ -1,0 +1,20 @@
+version: '3.2'
+
+services:
+  mongo:
+    ports:
+      - '27018:27017'
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - /shortener/node_modules # prevent them being overwritten by the above
+      - .:/shortener
+    environment:
+      NODE_ENV: development
+      SSL: 'false'
+      URL: localhost
+    ports:
+      - 3000:3000

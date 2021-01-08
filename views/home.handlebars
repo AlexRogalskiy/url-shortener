@@ -1,0 +1,99 @@
+<form>
+  <div class="input-field full">
+    <label for="url">Long URL</label>
+    <input type="text" id="url" onClick="this.select()" autocomplete="off">
+  </div><span class="title">{{shortlinks}} shortlinks</span>
+</form>
+
+{{#if showAds}}
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <!-- Subr.pw -->
+  <ins class="adsbygoogle"
+     data-ad-client="ca-pub-3884627036744525"
+     data-ad-slot="2954906335"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+  <script>
+  (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+{{/if}}
+
+<footer>
+  <p>Made by <a href="//subjectrefresh.info">SubjectRefresh</a> | Looking for the <a href="docs">API docs</a>?</p>
+</footer>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script>
+  $('input').focus(function() {
+    var label = $("[for='" + $(this).attr('id') + "']");
+    label.addClass('raised highlight');
+  });
+
+  $('input').blur(function() {
+    var label = $("[for='" + $(this).attr('id') + "']");
+    label.removeClass('highlight');
+    if ($(this).val().length == 0) {
+      label.removeClass('raised');
+    }
+  });
+
+  if (!window.location.origin) {
+    window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
+  }
+
+  function showShortText(short, cb) {
+    if (!cb) cb = function() {}
+    var $label = $("label[for='url']");
+    var $url = $('#url');
+    var $selector = $("#url, label[for='url']");
+
+    if ($label.text() === 'Short URL') $selector = $url;
+
+    $selector.fadeOut("fast", function() {
+      $url.val(window.location.origin + '/s/' + short).fadeIn("fast", cb).click();
+      if ($selector !== $url) $label.text('Short URL').fadeIn('fast');
+    });
+  }
+
+  $(function() {
+    $("form").on("submit", function(e) {
+      e.preventDefault();
+      generateShortlink($("#url").val(), 'form');
+      return false;
+    });
+
+    $("#url").on("paste", function() {
+      var element = this;
+      setTimeout(function() { // otherwise the value is blank
+        generateShortlink($(element).val(), 'paste');
+      }, 0);
+    });
+
+    function generateShortlink(url, origin) {
+      $("#url").removeClass("shake");
+
+      superagent
+        .post('/api/v1/short')
+        .send({ url, update_key: null })
+        .end(function(err, res) {
+          if (err || !res.ok) {
+            console.log(err, res);
+            $("#url").addClass("shake");
+
+            gtag('event', 'shorten-' + origin, {
+              event_category: 'Failure',
+              event_label: url
+            });
+          } else {
+            gtag('event', 'shorten-' + origin, {
+              event_category: 'Shortened',
+              event_label: url,
+              short: res.body.data.short
+            });
+
+            showShortText(res.body.data.short)
+          }
+        });
+    }
+  });
+</script>
